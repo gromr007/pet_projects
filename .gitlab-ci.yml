@@ -1,0 +1,38 @@
+# Добавляем глобальную переменную, чтобы GitLab скачивал репозиторий полностью
+variables:
+  GIT_DEPTH: "0"
+
+stages:
+  - sync
+
+# 1. ЭТАП: Синхронизация кода на GitHub (Один коммит "code")
+sync_to_github:
+  stage: sync
+  image: bitnami/git:latest
+  script:
+  
+    # Полностью удаляем старую историю коммитов текущего раннера
+    - rm -rf .git
+    
+    # Инициализируем чистый Git-репозиторий с нуля
+    - git init
+    - git config --global user.email "gitlab-ci@pet-project.online"
+    - git config --global user.name "GitLab CI"
+    
+    # Индексируем файлы и создаем ОДИН единственный коммит "code"
+    - git add .
+    - git commit -m "code"
+    - git branch -M master
+
+    # Очищаем токен от возможных спецсимволов Windows/Linux
+    - CLEAN_TOKEN=$(echo -n "$GH_TOKEN" | tr -d '\r' | tr -d '\n' | xargs)
+
+    # добавить удаленный репозиторий через очищенный токен
+    - git remote add github "https://oauth2:${CLEAN_TOKEN}@github.com/gromr007/pet_projects.git"
+    - git remote -v
+    
+    # Отправляем код
+    - git push --force github master
+    
+  only:
+    - master
